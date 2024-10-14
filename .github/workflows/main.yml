@@ -1,51 +1,56 @@
-name: Check Files in My Repositories
+name: Numerical Filter
 
 on:
-  workflow_dispatch:  # Allows manual triggering of the workflow
+  workflow_dispatch:
+    repositories:
+      - cloud9labz/python
+      - cloud9labz/repo-a
+      - cloud9labz/repo-b
 
-permissions:
-  contents: read
 
 jobs:
-  check_files:
+  filter:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout Repositories
+      - name: Checkout repo-1
+        uses: actions/checkout@v3
+        with:
+          repository: cloud9labz/python
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+        id: repo-1
+
+      - name: Checkout repo-2
+        uses: actions/checkout@v3
+        with:
+          repository: cloud9labz/repo-a
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+        id: repo-2
+
+      - name: Checkout repo-3
+        uses: actions/checkout@v3
+        with:
+          repository: cloud9labz/repo-b
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+        id: repo-3
+
+
+      - name: Find matching files and folders
         run: |
-          # Define your repositories here
-          REPOS=cloud9labz/repo-a
-          
-          # Create a CSV results file
-          RESULTS_FILE="results.csv"
-          echo "Repository,File,Commit Hash,Commit Date" > $RESULTS_FILE
-          
-          for REPO in "${REPOS[@]}"; do
-            echo "Checking $REPO..."
-            git clone --depth 1 https://x-access-token:${{ secrets.MY_ACCESS_TOKEN }}@github.com/$REPO.git
-            cd $(basename "$REPO")
-            
-            # Find files and folders matching criteria
-            MATCHING_FILES=$(git ls-tree -r HEAD --name-only | grep -E '^(D|US)[0-9]{14}')
-            
-            if [ -n "$MATCHING_FILES" ]; then
-              for FILE in $MATCHING_FILES; do
-                COMMIT_INFO=$(git log -1 --format="%h,%cd" --date=iso -- "$FILE")
-                echo "$REPO,$FILE,$COMMIT_INFO" >> $RESULTS_FILE
-              done
-            else
-              echo "$REPO,No matching files found,,," >> $RESULTS_FILE
-            fi
-            
-            cd ..
-            rm -rf $(basename "$REPO")  # Clean up
+          for REPO in repo-1 repo-2 repo-3 ; do
+            echo "Processing $REPO"
+            find ./${REPO} -type f -o -type d | while read -r path; do
+              filename=$(basename "$path")
+              if [[ $filename =~ ^[0-9]{14}$ ]] || [[ $filename =~ [DUS][0-9]* ]] || [[ $filename =~ [0-9]*[DUS][0-9]* ]]; then
+                echo "$REPO,$path,$filename,$(git log -1 --format=%cd --date=iso -- $path)" >> matching_files.csv
+              fi
+            done
           done
 
-          # Output results file to the console
-          cat $RESULTS_FILE
-
-      - name: Upload Results
-        uses: actions/upload-artifact@v3  # Updated to v3
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
         with:
-          name: results
-          path: results.csv
+          name: matching_files.csv
+          path: matching_files.csv
