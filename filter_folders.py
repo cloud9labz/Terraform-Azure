@@ -3,11 +3,11 @@ import csv
 from github import Github
 
 # Replace with your GitHub personal access token
-token = "YOUR_PERSONAL_ACCESS_TOKEN"
+token = "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"
 
 # Replace with your GitHub repository owner and name
-repo_owner = "YOUR_REPOSITORY_OWNER"
-repo_name = "YOUR_REPOSITORY_NAME"
+repo_owner = "cloud9labz"
+repo_name = "repo-b"
 
 def filter_folders(repo):
     folders = []
