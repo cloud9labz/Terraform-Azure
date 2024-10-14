@@ -17,44 +17,53 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: List folders and commit times
+      - name: Install dependencies
         run: |
-          python -c "
-import os
-import re
-import csv
-from datetime import datetime
-from git import Repo
+          python -m pip install --upgrade pip
+          pip install gitpython
 
-repo = Repo('.')
+      - name: Create Python script
+        run: |
+          cat << EOF > list_folders.py
+          import os
+          import re
+          import csv
+          from datetime import datetime
+          from git import Repo
 
-def get_last_commit_time(path):
-    commits = list(repo.iter_commits(paths=path, max_count=1))
-    return commits[0].committed_datetime if commits else None
+          repo = Repo('.')
 
-folder_info = []
+          def get_last_commit_time(path):
+              commits = list(repo.iter_commits(paths=path, max_count=1))
+              return commits[0].committed_datetime if commits else None
 
-for root, dirs, _ in os.walk('.'):
-    for dir in dirs:
-        if not dir[0].isdigit():
-            match = re.search(r'(\d{14})_', dir)
-            if match:
-                full_path = os.path.join(root, dir)
-                commit_time = get_last_commit_time(full_path)
-                if commit_time:
-                    folder_info.append((full_path, commit_time))
+          folder_info = []
 
-with open('folder_list.csv', 'w', newline='') as csvfile:
-    writer = csv.writer(csvfile)
-    writer.writerow(['Folder Name', 'Last Commit Time'])
-    for folder, commit_time in folder_info:
-        writer.writerow([folder, commit_time.strftime('%Y-%m-%d %H:%M:%S')])
+          for root, dirs, _ in os.walk('.'):
+              for dir in dirs:
+                  if not dir[0].isdigit():
+                      match = re.search(r'(\d{14})_', dir)
+                      if match:
+                          full_path = os.path.join(root, dir)
+                          commit_time = get_last_commit_time(full_path)
+                          if commit_time:
+                              folder_info.append((full_path, commit_time))
 
-print('CSV file created: folder_list.csv')
-          "
+          with open('folder_list.csv', 'w', newline='') as csvfile:
+              writer = csv.writer(csvfile)
+              writer.writerow(['Folder Name', 'Last Commit Time'])
+              for folder, commit_time in folder_info:
+                  writer.writerow([folder, commit_time.strftime('%Y-%m-%d %H:%M:%S')])
+
+          print('CSV file created: folder_list.csv')
+          EOF
+
+      - name: Run Python script
+        run: python list_folders.py
 
       - name: Upload CSV file
         uses: actions/upload-artifact@v3
         with:
           name: folder-list
           path: folder_list.csv
+
