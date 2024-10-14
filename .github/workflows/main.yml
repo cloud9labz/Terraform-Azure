@@ -39,15 +39,17 @@ jobs:
 
       - name: Find matching files and folders
         run: |
-          for REPO in repo-1 repo-2 repo-3 ; do
+          for REPO in repo-1 repo-2 repo-3 repo-4; do
             echo "Processing $REPO"
             find ./${REPO} -type f -o -type d | while read -r path; do
+              echo "Checking $path"
               filename=$(basename "$path")
               if [[ $filename =~ ^[0-9]{14}$ ]] || [[ $filename =~ [DUS][0-9]* ]] || [[ $filename =~ [0-9]*[DUS][0-9]* ]]; then
-                echo "$REPO,$path,$filename,$(git log -1 --format=%cd --date=iso -- $path)" >> matching_files.csv
+                echo "Match found: $REPO,$path,$filename,$(git log -1 --format=%cd --date=iso -- $path)" >> matching_files.csv
               fi
             done
           done
+          ls -l matching_files.csv
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
