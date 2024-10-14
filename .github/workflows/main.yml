@@ -11,7 +11,7 @@ jobs:
       - name: Checkout Repositories
         run: |
           # Define your repositories here
-          REPOS=("cloud9labz/python" "cloud9labz/repo-a" "cloud9labz/repo-b")
+          REPOS=("cloud9labz/repo-a" "cloud9labz/repo-b")
           
           # Create a CSV results file
           RESULTS_FILE="results.csv"
