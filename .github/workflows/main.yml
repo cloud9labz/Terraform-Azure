@@ -1,0 +1,48 @@
+name: Check Files in My Repositories
+
+on:
+  workflow_dispatch:  # Allows manual triggering of the workflow
+
+jobs:
+  check_files:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repositories
+        run: |
+          # Define your repositories here
+          REPOS=("cloud9labz/python" "cloud9labz/repo-a" "cloud9labz/repo-b3")
+          
+          # Create a CSV results file
+          RESULTS_FILE="results.csv"
+          echo "Repository,File,Commit Hash,Commit Date" > $RESULTS_FILE
+          
+          for REPO in "${REPOS[@]}"; do
+            echo "Checking $REPO..."
+            git clone --depth 1 https://github.com/$REPO.git
+            cd $(basename "$REPO")
+            
+            # Find files and folders matching criteria
+            MATCHING_FILES=$(git ls-tree -r HEAD --name-only | grep -E '^(D|US)[0-9]{14}')
+            
+            if [ -n "$MATCHING_FILES" ]; then
+              for FILE in $MATCHING_FILES; do
+                COMMIT_INFO=$(git log -1 --format="%h,%cd" --date=iso -- "$FILE")
+                echo "$REPO,$FILE,$COMMIT_INFO" >> $RESULTS_FILE
+              done
+            else
+              echo "$REPO,No matching files found,,," >> $RESULTS_FILE
+            fi
+            
+            cd ..
+            rm -rf $(basename "$REPO")  # Clean up
+          done
+
+          # Output results file to the console
+          cat $RESULTS_FILE
+
+      - name: Upload Results
+        uses: actions/upload-artifact@v2
+        with:
+          name: results
+          path: results.csv
