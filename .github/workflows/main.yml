@@ -1,42 +1,36 @@
-name: List Folders
+name: Folder List
 
 on:
-  workflow_dispatch:  # Allows manual triggering
+  workflow_dispatch:
 
 jobs:
-  list-folders:
+  folder-list:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
-      - name: List folders and commit times
+      - name: Gather folder information
         run: |
-          # Create a CSV file
-          output_file="folder_commit_times.csv"
-          echo "Folder Name,Commit Time" > $output_file
+          echo "Checking git version..."
+          git --version
+          
+          echo "Listing migration directory..."
+          ls migration
+          
+          echo "Running git ls-tree..."
+          folders=$(git ls-tree -r --name-only HEAD migration | grep -E '^[^0-9]+|^[0-9]{14}_[^0-9]+')
+          echo "Folders: $folders"
+          
+          while IFS= read -r folder; do
+            commit_time=$(git log -1 --format=%ct -- $folder)
+            echo "$folder,$(date -d @$commit_time '+%Y-%m-%d %H:%M:%S')" 
+          done <<< "$folders" > folder_list.csv
 
-          # List directories and filter based on criteria
-          for dir in */; do
-            dir_name="${dir%/}"
-            # Check for 14-digit numerical component followed by an underscore
-            if [[ $dir_name =~ ^[0-9]{14}_(.+) ]]; then
-              # Get the last commit time for the folder
-              commit_time=$(git log -1 --format="%ci" -- "$dir")
-              echo "$dir_name,$commit_time" >> $output_file
-            elif [[ $dir_name =~ ^[0-9]{1,13}_(.+) ]]; then
-              echo "$dir_name skipped (contains 13 or fewer digits)."
-            else
-              echo "$dir_name skipped (non-numerical)."
-            fi
-          done
-
-          # Output the CSV file
-          echo "CSV output created: $output_file"
-
-      - name: Upload CSV file
+      - name: Upload output
         uses: actions/upload-artifact@v3
         with:
-          name: folder_commit_times
-          path: folder_commit_times.csv
+          name: folder_list.csv
+          path: folder_list.csv
