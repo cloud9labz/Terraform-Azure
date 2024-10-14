@@ -19,7 +19,7 @@ jobs:
           
           for REPO in "${REPOS[@]}"; do
             echo "Checking $REPO..."
-            git clone --depth 1 https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/$REPO.git
+            git clone --depth 1 https://x-access-token:${{ secrets.MY_ACCESS_TOKEN }}@github.com/$REPO.git
             cd $(basename "$REPO")
             
             # Find files and folders matching criteria
