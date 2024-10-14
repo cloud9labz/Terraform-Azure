@@ -11,7 +11,7 @@ jobs:
       - name: Checkout Repositories
         run: |
           # Define your repositories here
-          REPOS=("cloud9labz/python" "cloud9labz/repo-a" "cloud9labz/repo-b3")
+          REPOS=("cloud9labz/python" "cloud9labz/repo-a" "cloud9labz/repo-b")
           
           # Create a CSV results file
           RESULTS_FILE="results.csv"
@@ -19,7 +19,7 @@ jobs:
           
           for REPO in "${REPOS[@]}"; do
             echo "Checking $REPO..."
-            git clone --depth 1 https://github.com/$REPO.git
+            git clone --depth 1 https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/$REPO.git
             cd $(basename "$REPO")
             
             # Find files and folders matching criteria
@@ -42,7 +42,7 @@ jobs:
           cat $RESULTS_FILE
 
       - name: Upload Results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v3  # Updated to v3
         with:
           name: results
           path: results.csv
