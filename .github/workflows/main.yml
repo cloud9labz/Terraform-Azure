@@ -1,38 +1,42 @@
-name: Folder List
+name: List Folders
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:  # Allows manual triggering
 
 jobs:
-  folder_list:
+  list-folders:
     runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
 
-      - name: List folders
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: List folders and commit times
         run: |
-          echo "Folder Name,Commit Time" > folder_list.csv
-          
-          # Get all folders and subfolders
-          for folder in $(git ls-tree -r --name-only HEAD); do
-            # Check if the folder name is non-numerical
-            if [[ $folder =~ ^[a-zA-Z]+$ ]]; then
-              commit_time=$(git log -1 --format=%ad --date=unix -- "$folder")
-              echo "$folder,$commit_time" >> folder_list.csv
+          # Create a CSV file
+          output_file="folder_commit_times.csv"
+          echo "Folder Name,Commit Time" > $output_file
+
+          # List directories and filter based on criteria
+          for dir in */; do
+            dir_name="${dir%/}"
+            # Check for 14-digit numerical component followed by an underscore
+            if [[ $dir_name =~ ^[0-9]{14}_(.+) ]]; then
+              # Get the last commit time for the folder
+              commit_time=$(git log -1 --format="%ci" -- "$dir")
+              echo "$dir_name,$commit_time" >> $output_file
+            elif [[ $dir_name =~ ^[0-9]{1,13}_(.+) ]]; then
+              echo "$dir_name skipped (contains 13 or fewer digits)."
+            else
+              echo "$dir_name skipped (non-numerical)."
             fi
-            
-            # Check if the folder contains subfolders with a 14-digit name
-            for subfolder in $(git ls-tree -r --name-only HEAD -- "$folder"); do
-              if [[ $subfolder =~ ^[0-9]{14}$ ]]; then
-                commit_time=$(git log -1 --format=%ad --date=unix -- "$folder")
-                echo "$folder/$subfolder,$commit_time" >> folder_list.csv
-              fi
-            done
           done
 
+          # Output the CSV file
+          echo "CSV output created: $output_file"
+
       - name: Upload CSV file
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v2
         with:
-          name: folder_list.csv
-          path: folder_list.csv
+          name: folder_commit_times
+          path: folder_commit_times.csv
