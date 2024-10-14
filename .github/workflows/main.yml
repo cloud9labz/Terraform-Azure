@@ -13,26 +13,22 @@ jobs:
       - name: List folders
         run: |
           echo "Folder Name,Commit Time" > folder_list.csv
-          # Get all folders in the repo
-          git ls-tree -r --name-only HEAD | while read folder; do
+          
+          # Get all folders and subfolders
+          for folder in $(git ls-tree -r --name-only HEAD); do
             # Check if the folder name is non-numerical
             if [[ $folder =~ ^[a-zA-Z]+$ ]]; then
-              commit_time=$(git log -1 --format=%ad --date=unix -- $folder)
+              commit_time=$(git log -1 --format=%ad --date=unix -- "$folder")
               echo "$folder,$commit_time" >> folder_list.csv
             fi
-          done
-
-          # Get all subfolders
-          git ls-tree -r --name-only HEAD | while read subfolder; do
-            # Check if it matches the 14-digit numerical condition
-            if [[ $subfolder =~ ^[0-9]{14}$ ]]; then
-              parent_folder=$(dirname "$subfolder")
-              # Check if the parent folder name is non-numerical
-              if [[ $parent_folder =~ ^[a-zA-Z]+$ ]]; then
-                commit_time=$(git log -1 --format=%ad --date=unix -- $parent_folder)
-                echo "$parent_folder/$subfolder,$commit_time" >> folder_list.csv
+            
+            # Check if the folder contains subfolders with a 14-digit name
+            for subfolder in $(git ls-tree -r --name-only HEAD -- "$folder"); do
+              if [[ $subfolder =~ ^[0-9]{14}$ ]]; then
+                commit_time=$(git log -1 --format=%ad --date=unix -- "$folder")
+                echo "$folder/$subfolder,$commit_time" >> folder_list.csv
               fi
-            fi
+            done
           done
 
       - name: Upload CSV file
