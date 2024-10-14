@@ -39,7 +39,7 @@ jobs:
 
       - name: Find matching files and folders
         run: |
-          for REPO in repo-1 repo-2 repo-3 repo-4; do
+          for REPO in repo-1 repo-2 repo-3 ; do
             echo "Processing $REPO"
             find ./${REPO} -type f -o -type d | while read -r path; do
               echo "Checking $path"
