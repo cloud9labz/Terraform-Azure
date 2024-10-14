@@ -1,58 +1,32 @@
-name: Numerical Filter
+name: Folder List
 
 on:
   workflow_dispatch:
-    repositories:
-      - cloud9labz/python
-      - cloud9labz/repo-a
-      - cloud9labz/repo-b
-
 
 jobs:
-  filter:
+  folder_list:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repo-1
+      - name: Checkout code
         uses: actions/checkout@v3
-        with:
-          repository: cloud9labz/python
-          token: ${{ secrets.MY_ACCESS_TOKEN }}
-          fetch-depth: 0
-        id: repo-1
 
-      - name: Checkout repo-2
-        uses: actions/checkout@v3
-        with:
-          repository: cloud9labz/repo-a
-          token: ${{ secrets.MY_ACCESS_TOKEN }}
-          fetch-depth: 0
-        id: repo-2
-
-      - name: Checkout repo-3
-        uses: actions/checkout@v3
-        with:
-          repository: cloud9labz/repo-b
-          token: ${{ secrets.MY_ACCESS_TOKEN }}
-          fetch-depth: 0
-        id: repo-3
-
-
-      - name: Find matching files and folders
+      - name: List folders
         run: |
-          for REPO in repo-1 repo-2 repo-3 ; do
-            echo "Processing $REPO"
-            find ./${REPO} -type f -o -type d | while read -r path; do
-              echo "Checking $path"
-              filename=$(basename "$path")
-              if [[ $filename =~ ^[0-9]{14}$ ]] || [[ $filename =~ [DUS][0-9]* ]] || [[ $filename =~ [0-9]*[DUS][0-9]* ]]; then
-                echo "Match found: $REPO,$path,$filename,$(git log -1 --format=%cd --date=iso -- $path)" >> matching_files.csv
-              fi
-            done
+          echo "Folder Name,Commit Time" > folder_list.csv
+          git ls-tree -r --name-only HEAD | while read folder; do
+            if [[ $folder =~ ^[a-zA-Z] ]]; then
+              commit_time=$(git log -1 --format=%ad --date=unix -- $folder)
+              echo "$folder,$commit_time" >> folder_list.csv
+              for subfolder in $(git ls-tree -r --name-only HEAD -- $folder); do
+                if [[ $subfolder =~ ^[0-9]{14}$ ]]; then
+                  echo "$folder/$subfolder,$commit_time" >> folder_list.csv
+                fi
+              done
+            fi
           done
-          ls -l matching_files.csv
 
-      - name: Upload artifact
+      - name: Upload CSV file
         uses: actions/upload-artifact@v3
         with:
-          name: matching_files.csv
-          path: matching_files.csv
+          name: folder_list.csv
+          path: folder_list.csv
