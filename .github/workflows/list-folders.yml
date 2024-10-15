@@ -1,0 +1,36 @@
+name: List Folders with Commit Times
+
+on:
+  workflow_dispatch:
+    inputs:
+      repo:
+        description: 'Repository name'
+        required: true
+
+jobs:
+  list_folders:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          repository: ${{ github.event.inputs.repo }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: main
+
+      - name: List Folders
+        run: |
+          echo "Folder Name,Commit Time" > folder_list.csv
+          for dir in $(find ./Migration -type d -name '*'); do
+            folder_name=$(basename "$dir")
+            if [[ "$folder_name" =~ ^[^0-9].* || "$folder_name" =~ ^([0-9]{14})_.* ]]; then
+              commit_time=$(git log -1 --format="%cd" --date=iso -- "$dir")
+              echo "$folder_name,$commit_time" >> folder_list.csv
+            fi
+          done
+
+      - name: Upload CSV file
+        uses: actions/upload-artifact@v3
+        with:
+          name: folder-list
+          path: folder_list.csv
