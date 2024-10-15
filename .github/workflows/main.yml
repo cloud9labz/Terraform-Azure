@@ -11,16 +11,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: List Folders
+      - name: List Folders in Migration
         run: |
           echo "Folder Name,Commit Time" > folder_list.csv
-          for dir in $(find . -type d -name '*'); do
+          if [ -d "Migration" ]; then
+            dir="Migration"
             folder_name=$(basename "$dir")
             if [[ "$folder_name" =~ ^[^0-9].* || "$folder_name" =~ ^([0-9]{14})_.* ]]; then
               commit_time=$(git log -1 --format="%cd" --date=iso "$dir")
               echo "$folder_name,$commit_time" >> folder_list.csv
             fi
-          done
+          fi
 
       - name: Upload CSV file
         uses: actions/upload-artifact@v3
