@@ -6,22 +6,20 @@ on:
 jobs:
   list_folders:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: List Folders in Migration
+      - name: List Folders
         run: |
           echo "Folder Name,Commit Time" > folder_list.csv
-          if [ -d "Migration" ]; then
-            dir="Migration"
+          for dir in $(find ./Migration -type d -name '*'); do
             folder_name=$(basename "$dir")
             if [[ "$folder_name" =~ ^[^0-9].* || "$folder_name" =~ ^([0-9]{14})_.* ]]; then
-              commit_time=$(git log -1 --format="%cd" --date=iso "$dir")
+              commit_time=$(git log -1 --format="%cd" --date=iso -- "$dir")
               echo "$folder_name,$commit_time" >> folder_list.csv
             fi
-          fi
+          done
 
       - name: Upload CSV file
         uses: actions/upload-artifact@v3
