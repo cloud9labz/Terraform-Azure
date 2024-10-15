@@ -1,8 +1,8 @@
 name: Filter Folders
 
 on:
-  push:
-    branches: [main]
+  #push:
+   # branches: [main]
 
 jobs:
   filter_folders:
