@@ -1,0 +1,24 @@
+name: Repository Iterator
+
+on:
+  workflow_dispatch:
+    inputs:
+      repos:
+        description: 'List of repositories (comma-separated)'
+        required: true
+
+jobs:
+  iterate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Iterate over repositories
+        run: |
+          IFS=',' read -ra REPOS <<< "${{ github.event.inputs.repos }}"
+          for REPO in "${REPOS[@]}"; do
+            echo "Processing repository: $REPO"
+            github-action run $GITHUB_REPOSITORY/$GITHUB_BRANCH \
+              --repo $REPO \
+              --token ${{ secrets.MY_ACCESS_TOKEN }} \
+              --workflow "List Folders with Commit Times" \
+              --ref main
+          done
