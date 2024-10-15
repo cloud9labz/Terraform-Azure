@@ -1,0 +1,46 @@
+name: New List Folders with Commit Times with Repos
+
+on:
+  workflow_dispatch:
+
+jobs:
+  list_folders:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository List
+        run: |
+          # List of repositories to check
+          repos=("cloud9labz/repo-b" "cloud9labz/repo-a" "cloud9labz/python" "cloud9labz/Terraform-Azure") # Add your repos here
+          
+          echo "Repo Name,Folder Name,Commit Time" > folder_list.csv
+          
+          for repo in "${repos[@]}"; do
+            echo "Processing $repo..."
+            # Clone the repository using the GitHub token for authentication
+            git clone --depth 1 https://x-access-token:${{ secrets.MY_ACCESS_TOKEN }}@github.com/$repo.git
+            repo_name=$(basename "$repo")
+            
+            # Change to the repo directory
+            cd "$repo_name" || exit
+            
+            # List folders and their commit times
+            for dir in $(find ./Migration -type d -name '*'); do
+              folder_name=$(basename "$dir")
+              if [[ "$folder_name" =~ ^[^0-9].* || "$folder_name" =~ ^([0-9]{14})_.* ]]; then
+                commit_time=$(git log -1 --format="%cd" --date=iso -- "$dir")
+                echo "$repo_name,$folder_name,$commit_time" >> ../folder_list.csv
+              fi
+            done
+            
+            # Change back to the previous directory
+            cd ..
+            
+            # Clean up the cloned repository
+            rm -rf "$repo_name"
+          done
+
+      - name: Upload CSV file
+        uses: actions/upload-artifact@v3
+        with:
+          name: folder-list
+          path: folder_list.csv
