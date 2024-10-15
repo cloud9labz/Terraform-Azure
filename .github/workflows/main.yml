@@ -23,7 +23,7 @@ jobs:
           done
 
       - name: Upload CSV file
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: folder-list
           path: folder_list.csv
